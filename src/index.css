@@ -1,0 +1,137 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', sans-serif;
+  line-height: 1.55;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-ink-900 text-text-primary antialiased;
+  background-image:
+    radial-gradient(ellipse at 50% -10%, rgba(155, 107, 255, 0.18), transparent 55%),
+    radial-gradient(ellipse at 100% 100%, rgba(94, 230, 230, 0.10), transparent 50%),
+    linear-gradient(180deg, #06070D 0%, #0A0B14 60%, #06070D 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Subtle noise texture overlay using a tiny SVG */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.6  0 0 0 0 0.7  0 0 0 0 0.9  0 0 0 0.12 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  opacity: 0.4;
+  mix-blend-mode: overlay;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* Number-flavored scrollbars */
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: rgba(94, 230, 230, 0.18); border-radius: 4px; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(94, 230, 230, 0.32); }
+
+/* Selection */
+::selection {
+  background: rgba(155, 107, 255, 0.35);
+  color: #fff;
+}
+
+@layer components {
+  .glass-panel {
+    @apply relative overflow-hidden rounded-2xl border border-ink-500/70 bg-ink-800/60 backdrop-blur-xl;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.04) inset,
+      0 0 0 1px rgba(94, 230, 230, 0.05),
+      0 24px 60px -20px rgba(0, 0, 0, 0.7);
+  }
+
+  .glass-panel-hover {
+    @apply transition-all duration-300 hover:border-cyan/40 hover:shadow-cardHover;
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #5EE6E6 0%, #9B6BFF 50%, #F5B14C 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .tier-badge {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-cyan/40 bg-cyan/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan;
+  }
+  .tier-badge-max {
+    @apply border-violet/40 bg-violet/10 text-violet-soft;
+  }
+  .tier-badge-ultra {
+    @apply border-amber/50 bg-amber/10 text-amber;
+  }
+  .tier-badge-unknown {
+    @apply border-text-muted/50 bg-ink-700/60 text-text-secondary;
+  }
+
+  .stat-label {
+    @apply text-[10px] font-semibold uppercase tracking-[0.22em] text-text-muted;
+  }
+  .stat-value {
+    @apply font-mono text-2xl font-semibold tracking-tight text-text-primary;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-ink-500 bg-ink-700/60 px-2 py-0.5 font-mono text-[11px] text-text-secondary;
+  }
+
+  .raw-json-key { @apply text-violet-soft; }
+  .raw-json-string { @apply text-cyan; }
+  .raw-json-number { @apply text-amber; }
+  .raw-json-bool { @apply text-rose; }
+  .raw-json-null { @apply text-text-muted; }
+}
+
+/* Subtle grid overlay for the main canvas */
+.canvas-grid {
+  background-image:
+    linear-gradient(rgba(94, 230, 230, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(94, 230, 230, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: -1px -1px;
+}
+
+/* Stagger reveal helpers */
+.reveal-1 { animation-delay: 0.05s; }
+.reveal-2 { animation-delay: 0.12s; }
+.reveal-3 { animation-delay: 0.20s; }
+.reveal-4 { animation-delay: 0.28s; }
+.reveal-5 { animation-delay: 0.36s; }
+.reveal-6 { animation-delay: 0.44s; }
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid rgba(94, 230, 230, 0.6);
+  outline-offset: 2px;
+  border-radius: 6px;
+}

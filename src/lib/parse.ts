@@ -197,6 +197,46 @@ export function normalize(source: UpstreamSource): NormalizedPlan | null {
   }
 }
 
+/**
+ * MiniMax `base_resp.status_code` values that mean the user has no active
+ * Coding Plan subscription (as opposed to a network/auth/parse error).
+ * Surfaced separately so the UI can show a "renew your plan" banner
+ * instead of a generic "fetch failed" message.
+ *
+ *   2062 — no active token plan subscription
+ *   2063 — quota exhausted (also blocks the endpoint even if a plan exists)
+ *   2064 — token plan expired
+ */
+const NO_SUBSCRIPTION_CODES = new Set<number>([2062, 2063, 2064])
+
+/**
+ * Inspect raw responses for an "account has no active subscription" signal.
+ * Returns the code + message so the UI can show exactly what MiniMax said.
+ */
+export function detectNoSubscription(
+  sources: UpstreamSource[],
+): { code: number; message: string } | null {
+  for (const source of sources) {
+    if (!source.raw || typeof source.raw !== 'object') continue
+    const baseResp = (source.raw as Record<string, unknown>).base_resp
+    if (!baseResp || typeof baseResp !== 'object') continue
+    const code = Number((baseResp as Record<string, unknown>).status_code ?? -1)
+    if (NO_SUBSCRIPTION_CODES.has(code)) {
+      const message = String(
+        (baseResp as Record<string, unknown>).status_msg ?? 'subscription not active',
+      )
+      return { code, message }
+    }
+  }
+  return null
+}
+
+/**
+ * Pick the first usable source and normalize it. Dispatches to the
+ * provider-specific parser based on `source.provider`.
+ * Add a new provider: extend the `ProviderId` union, implement a
+ * `normalizeXxx()` and add a branch here.
+ */
 export function bestPlan(sources: UpstreamSource[]): NormalizedPlan | null {
   for (const source of sources) {
     if (!source.ok) continue

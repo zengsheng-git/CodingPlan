@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { cn } from '@/lib/format'
 
 interface ArcProgressProps {
@@ -11,6 +11,11 @@ interface ArcProgressProps {
   /** used arc gradient class list (overrides default) */
   gradient?: 'cyan-violet' | 'amber-rose' | 'cyan-amber'
   showLabel?: boolean
+  /**
+   * 自定义圆盘中央文字内容。传 `string|number` 会被当作字面量显示;
+   * 不传时按 `value * 100%` 渲染。传 `null` 等同于 `showLabel={false}`。
+   */
+  label?: ReactNode
   labelClassName?: string
   className?: string
 }
@@ -30,6 +35,7 @@ export default function ArcProgress({
   trackClassName = 'stroke-ink-600/70',
   gradient = 'cyan-violet',
   showLabel = true,
+  label,
   labelClassName,
   className,
 }: ArcProgressProps) {
@@ -87,16 +93,20 @@ export default function ArcProgress({
           style={{ transition: 'stroke-dashoffset 0.9s cubic-bezier(0.16, 1, 0.3, 1)' }}
         />
       </svg>
-      {showLabel && (
+      {showLabel && label !== null && (
         <div
           className={cn(
             'absolute inset-0 flex flex-col items-center justify-center',
             labelClassName,
           )}
         >
-          <span className="font-mono text-2xl font-semibold tracking-tight text-text-primary">
-            {(safe * 100).toFixed(1)}%
-          </span>
+          {label !== undefined ? (
+            <span className="font-mono text-2xl font-semibold tracking-tight text-text-primary">{label}</span>
+          ) : (
+            <span className="font-mono text-2xl font-semibold tracking-tight text-text-primary">
+              {(safe * 100).toFixed(1)}%
+            </span>
+          )}
         </div>
       )}
     </div>

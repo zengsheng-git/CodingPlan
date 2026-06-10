@@ -39,6 +39,16 @@ npm run build
 # 把 dist/ 整个目录上传到 GitHub Pages / Vercel / Netlify / Cloudflare Pages 即可
 ```
 
+#### 部署到 GitHub Pages（自动）
+
+1. **修改 [vite.config.ts](vite.config.ts)**：把 `base: '/CodingPlan/'` 改成你实际的仓库名
+2. **GitHub repo → Settings → Pages → Source** 选 **"GitHub Actions"**
+3. 推送 `main` 分支后会自动触发 [.github/workflows/deploy.yml](.github/workflows/deploy.yml)
+4. 几分钟后访问 `https://<user>.github.io/CodingPlan/`
+
+> ⚠️ **生产环境 Kimi 会失效**：Kimi 走的是 Vite dev proxy（仅开发期生效），生产部署到 GitHub Pages 后切到 Kimi 会报错。MiniMax 仍可正常使用。
+> 完整代理方案（恢复 Express 后端）请用本地 `npm run dev` + 反代，或部署到一个支持自定义 server 的平台（Vercel / Netlify Functions / Cloudflare Workers）。
+
 ## 添加新 Provider
 
 只需改两个文件：

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { NormalizedPlan, ProviderId, UpstreamSource } from '@/types/plan'
 import { getProvider } from '@/lib/providers'
+import { bestPlan, detectNoSubscription } from '@/lib/parse'
 
 interface NoSubscriptionInfo {
   code: number
@@ -153,7 +154,6 @@ export const usePlanStore = create<PlanState>()(
         try {
           const source = await fetchUpstream(state.provider, key)
           const json = { ok: source.ok, sources: [source] }
-          const { bestPlan, detectNoSubscription } = await import('@/lib/parse')
           let plan = bestPlan(json.sources)
           const noSub = detectNoSubscription(json.sources)
           // 过滤掉用户不关心的模型（当前需求：只看 general）

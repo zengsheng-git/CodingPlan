@@ -15,12 +15,13 @@
 
 ```bash
 npm install
-npm run dev      # 只启动前端 (Vite :5173)
+npm run dev      # 启动 Vite (5173)
 ```
 
 浏览器打开 `http://localhost:5173`，选 provider、填 Key、点保存并查询。
 
-> **纯前端架构**：浏览器直接调用厂商 API，没有后端代理。**前提**是厂商 API 已开启 CORS（MiniMax 和 Kimi 已实测支持）。
+> **混合架构**：MiniMax 走纯前端（厂商 API 已正确返回 CORS），Kimi 走 Vite dev proxy（厂商 API 的 OPTIONS 预检不发 CORS 头，浏览器无法绕过）。
+> **生产部署限制**：部署到静态托管（GitHub Pages / Vercel / Netlify）时，Kimi 会失效；MiniMax 仍可用。
 
 ### 其他命令
 
@@ -80,17 +81,21 @@ export function normalizeYourNew(source: UpstreamSource): NormalizedPlan | null 
 
 ```
 浏览器 (5173)
-   │  fetch(https://api.minimaxi.com/..., { Authorization: Bearer <Key> })
-   │  (直接调用,无后端)
-   ▼
-上游 API (MiniMax / Kimi / ...)
+   │
+   ├── MiniMax:  fetch(https://api.minimaxi.com/..., { Authorization: Bearer <Key> })
+   │             (直接调用,厂商返回正确的 CORS 头)
+   │
+   └── Kimi:     fetch(/api/kimi-usages, ...)  ← Vite dev proxy (仅 dev)
+                   │
+                   ▼
+                 https://api.kimi.com/coding/v1/usages
 ```
 
-### 为什么不走代理
+### 为什么 Kimi 需要 dev proxy
 
-上游 MiniMax (`Access-Control-Allow-Origin`) 和 Kimi (`*`) 均已开启 CORS，浏览器可以直接跨域调用。**省掉后端 = 部署简单、运维简单、攻击面更小**。
+Kimi 的 `OPTIONS /coding/v1/usages` 返回 404 且不带 `Access-Control-Allow-Origin` 头。带 `Authorization` 的 GET 属于"非简单请求"，浏览器必须先发 OPTIONS 预检，Kimi 那边过不去就会 block。Vite 的 dev proxy 在服务器端转发请求，绕开了浏览器 CORS 限制。
 
-如果以后厂商改了 CORS 策略，前端会挂；届时再加一个轻量代理即可。
+如果 Kimi 后续修了 preflight CORS，把 [src/lib/providers.ts](src/lib/providers.ts) 里 `kimi.host` 改回 `https://api.kimi.com`、`kimi.path` 改回 `/coding/v1/usages`、删掉 `vite.config.ts` 的 proxy 配置就行。
 
 ### 数据流
 

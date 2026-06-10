@@ -24,4 +24,17 @@ export default defineConfig({
     }),
     tsconfigPaths(),
   ],
+  server: {
+    // 仅开发模式的代理：Kimi 的 OPTIONS 预检不发 CORS 头,
+    // 浏览器无法绕过 preflight,所以 dev 期走本地代理转发。
+    // 生产环境部署到静态托管时 Kimi 会失效(见 README)。
+    proxy: {
+      '/api/kimi-usages': {
+        target: 'https://api.kimi.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: path => path.replace(/^\/api\/kimi-usages/, '/coding/v1/usages'),
+      },
+    },
+  },
 })

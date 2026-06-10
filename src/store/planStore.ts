@@ -47,7 +47,7 @@ async function fetchUpstream(
       fetchedAt: new Date().toISOString(),
     }
   }
-  const url = `${provider.host}${provider.path}`
+  const url = provider.host ? `${provider.host}${provider.path}` : provider.path
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
   try {

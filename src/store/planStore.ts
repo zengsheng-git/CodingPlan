@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { NormalizedPlan, PlanQueryResponse, ProviderId } from '@/types/plan'
+import type { NormalizedPlan, ProviderId, UpstreamSource } from '@/types/plan'
+import { getProvider } from '@/lib/providers'
 
 interface NoSubscriptionInfo {
   code: number
@@ -11,7 +12,7 @@ interface PlanState {
   provider: ProviderId
   apiKeys: Record<ProviderId, string>
   loading: boolean
-  data: PlanQueryResponse | null
+  data: { ok: boolean; sources: UpstreamSource[] } | null
   plan: NormalizedPlan | null
   error: string | null
   lastFetchedAt: string | null
@@ -26,6 +27,77 @@ interface PlanState {
   setRefreshInterval: (sec: number) => void
   setShowRaw: (show: boolean) => void
   fetchPlan: () => Promise<void>
+}
+
+const REQUEST_TIMEOUT_MS = 15_000
+
+async function fetchUpstream(
+  providerId: ProviderId,
+  apiKey: string,
+): Promise<UpstreamSource> {
+  const provider = getProvider(providerId)
+  if (!provider) {
+    return {
+      provider: providerId,
+      endpoint: '',
+      status: 0,
+      raw: null,
+      ok: false,
+      error: `Unknown provider: ${providerId}`,
+      fetchedAt: new Date().toISOString(),
+    }
+  }
+  const url = `${provider.host}${provider.path}`
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  try {
+    const init: RequestInit = {
+      method: provider.method,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      signal: controller.signal,
+    }
+    const res = await fetch(url, init)
+    const text = await res.text()
+    let json: unknown
+    try {
+      json = JSON.parse(text)
+    } catch {
+      json = { _non_json: text.slice(0, 4096) }
+    }
+    const baseResp =
+      typeof json === 'object' && json !== null
+        ? (json as Record<string, unknown>).base_resp
+        : undefined
+    const statusCode =
+      typeof baseResp === 'object' && baseResp !== null
+        ? Number((baseResp as Record<string, unknown>).status_code ?? -1)
+        : -1
+    const ok = res.status >= 200 && res.status < 300 && (statusCode === 0 || statusCode === -1)
+    return {
+      provider: provider.id,
+      endpoint: provider.path,
+      status: res.status,
+      raw: json,
+      ok,
+      fetchedAt: new Date().toISOString(),
+    }
+  } catch (err) {
+    return {
+      provider: provider.id,
+      endpoint: provider.path,
+      status: 0,
+      raw: null,
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+      fetchedAt: new Date().toISOString(),
+    }
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 export const usePlanStore = create<PlanState>()(
@@ -64,13 +136,11 @@ export const usePlanStore = create<PlanState>()(
       setRefreshInterval: sec => set({ refreshIntervalSec: Math.max(10, sec) }),
       setShowRaw: show => set({ showRaw: show }),
       /**
-       * Fetch quota for the current provider + key. If the key is empty,
-       * sets an error message instead of issuing a request. The response
-       * is normalized via `bestPlan()` and stored as `plan`; the raw
-       * response is also kept as `data` for the RawResponse panel.
-       * If the upstream returns a known "no subscription" code, that
-       * signal is exposed via `noSubscription` (UI shows a renew banner
-       * instead of the generic error).
+       * Fetch quota for the current provider + key directly from the upstream
+       * API (no backend proxy). The response is normalized via `bestPlan()`
+       * and stored as `plan`; the raw response is also kept as `data` for
+       * the RawResponse panel. If the upstream returns a known "no
+       * subscription" code, that signal is exposed via `noSubscription`.
        */
       fetchPlan: async () => {
         const state = get()
@@ -81,15 +151,8 @@ export const usePlanStore = create<PlanState>()(
         }
         set({ loading: true, error: null, noSubscription: null })
         try {
-          const res = await fetch('/api/plan/remains', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ provider: state.provider, apiKey: key }),
-          })
-          if (!res.ok) {
-            throw new Error(`代理服务返回 HTTP ${res.status}`)
-          }
-          const json = (await res.json()) as PlanQueryResponse
+          const source = await fetchUpstream(state.provider, key)
+          const json = { ok: source.ok, sources: [source] }
           const { bestPlan, detectNoSubscription } = await import('@/lib/parse')
           let plan = bestPlan(json.sources)
           const noSub = detectNoSubscription(json.sources)
@@ -109,7 +172,9 @@ export const usePlanStore = create<PlanState>()(
               ? null
               : noSub
                 ? null
-                : '未找到可识别的套餐数据,请检查 Key 是否有效或展开 Raw Response 查看',
+                : source.error
+                  ? `请求失败: ${source.error}`
+                  : '未找到可识别的套餐数据,请检查 Key 是否有效或展开 Raw Response 查看',
             lastFetchedAt: new Date().toISOString(),
             loading: false,
           })

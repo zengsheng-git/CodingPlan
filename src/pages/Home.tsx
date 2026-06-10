@@ -7,14 +7,11 @@ import ModelGrid from '@/components/ModelGrid'
 import RawResponsePanel from '@/components/RawResponsePanel'
 import BackgroundFx from '@/components/BackgroundFx'
 import { usePlanStore } from '@/store/planStore'
+import { getProvider, type ProviderId } from '@/lib/providers'
 
-const PROVIDER_INFO_LINK: Record<string, string> = {
+const PROVIDER_INFO_LINK: Record<ProviderId, string> = {
   minimax: 'https://platform.minimaxi.com/subscribe/token-plan',
   kimi: 'https://kimi.com',
-}
-const PROVIDER_API_HOST: Record<string, string> = {
-  minimax: 'api.minimaxi.com',
-  kimi: 'api.kimi.com',
 }
 
 export default function Home() {
@@ -46,7 +43,10 @@ export default function Home() {
     void fetchPlan()
   }, [apiKey, provider, fetchPlan])
 
-  const footerHost = useMemo(() => PROVIDER_API_HOST[provider] ?? 'api.minimaxi.com', [provider])
+  const footerHost = useMemo(() => {
+    const host = getProvider(provider)?.host ?? ''
+    return host.replace(/^https?:\/\//, '') || 'api.minimaxi.com'
+  }, [provider])
   const infoLink = useMemo(() => PROVIDER_INFO_LINK[provider] ?? '#', [provider])
 
   return (
@@ -97,7 +97,7 @@ export default function Home() {
 
       <footer className="reveal-6 animate-fade-in-up mt-4 flex flex-col items-start justify-between gap-2 border-t border-ink-500/40 pt-4 text-[11px] text-text-muted md:flex-row md:items-center">
         <span>
-          Token Observatory · Built with React + Vite + Express · 仅供开发者本地使用
+          Token Observatory · Built with React + Vite · 仅供开发者本地使用
         </span>
         <span>
           数据来源:{footerHost} · 本服务不做任何持久化存储

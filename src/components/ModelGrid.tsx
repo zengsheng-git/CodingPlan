@@ -1,4 +1,4 @@
-import { Boxes, Inbox } from 'lucide-react'
+import { Boxes, Inbox, KeyRound } from 'lucide-react'
 import { usePlanStore } from '@/store/planStore'
 import ModelRemainCard, { ModelRemainCardSkeleton } from '@/components/ModelRemainCard'
 
@@ -8,7 +8,23 @@ export default function ModelGrid() {
   const provider = usePlanStore(s => s.provider)
   const apiKey = usePlanStore(s => s.apiKeys[provider])
 
-  if (!apiKey) return null
+  if (!apiKey) {
+    return (
+      <section className="reveal-3 animate-fade-in-up mt-6 flex flex-col items-center gap-3 rounded-2xl border border-ink-500/60 bg-ink-900/40 px-6 py-12 text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan/20 to-violet/20 text-cyan ring-1 ring-cyan/30">
+          <KeyRound size={20} />
+        </div>
+        <div>
+          <p className="font-display text-base font-semibold text-text-primary">
+            请先在上方输入 API Key
+          </p>
+          <p className="mt-1 text-xs text-text-muted">
+            填好后点击「保存并查询」即可拉取余量数据。Key 仅保存在你的浏览器本地,不会上传。
+          </p>
+        </div>
+      </section>
+    )
+  }
 
   if (loading && !plan) {
     return (

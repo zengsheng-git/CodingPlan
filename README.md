@@ -41,6 +41,8 @@ npm run build
 
 #### 部署到 GitHub Pages（自动）
 
+> 📘 完整部署文档 + yml 逐行解释见 [DEPLOY.md](DEPLOY.md)
+
 1. **修改 [vite.config.ts](vite.config.ts)**：把 `base: '/CodingPlan/'` 改成你实际的仓库名
 2. **GitHub repo → Settings → Pages → Source** 选 **"GitHub Actions"**
 3. 推送 `main` 分支后会自动触发 [.github/workflows/deploy.yml](.github/workflows/deploy.yml)

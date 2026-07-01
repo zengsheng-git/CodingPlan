@@ -7,6 +7,8 @@ import type { ProviderId } from '@/types/plan'
 const PROVIDER_PLACEHOLDER: Record<ProviderId, string> = {
   minimax: 'eyJhbGciOi...  或  sk-cp-xxxx...',
   kimi: 'sk-kimi-xxxx...  (Kimi Code 平台专用,以 sk-kimi- 开头)',
+  glm: '您的智谱 GLM API Key...',
+  deepseek: 'sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
 }
 
 export default function ApiKeyBar() {
@@ -18,17 +20,17 @@ export default function ApiKeyBar() {
   const fetchPlan = usePlanStore(s => s.fetchPlan)
   const autoRefresh = usePlanStore(s => s.autoRefresh)
   const setAutoRefresh = usePlanStore(s => s.setAutoRefresh)
-  const [draft, setDraft] = useState(apiKey)
+  const [draft, setDraft] = useState(apiKey ?? '')
   const [reveal, setReveal] = useState(false)
 
   // Reset draft when the user switches provider.
   useEffect(() => {
-    setDraft(apiKey)
+    setDraft(apiKey ?? '')
   }, [provider, apiKey])
 
   const handleSave = async () => {
-    setApiKey(draft)
-    if (draft.trim()) {
+    setApiKey(draft ?? '')
+    if ((draft ?? '').trim()) {
       await fetchPlan()
     }
   }
@@ -45,7 +47,9 @@ export default function ApiKeyBar() {
               API Key
             </span>
             <span className="text-sm text-text-secondary">
-              {apiKey ? '已连接 · 点击保存以重新查询' : `请输入 ${provider === 'kimi' ? 'Kimi/Moonshot' : 'MiniMax'} 平台 API Key`}
+              {apiKey
+                ? '已连接 · 点击保存以重新查询'
+                : `请输入 ${provider === 'kimi' ? 'Kimi/Moonshot' : provider === 'glm' ? '智谱 GLM' : provider === 'deepseek' ? 'DeepSeek' : 'MiniMax'} 平台 API Key`}
             </span>
           </div>
         </div>
@@ -115,7 +119,7 @@ export default function ApiKeyBar() {
           <button
             type="button"
             onClick={handleSave}
-            disabled={loading || !draft.trim()}
+            disabled={loading || !(draft ?? '').trim()}
             className={cn(
               'flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium transition-all',
               'border-cyan/40 bg-gradient-to-r from-cyan/15 to-violet/15 text-cyan',

@@ -12,6 +12,8 @@ import { getProvider, type ProviderId } from '@/lib/providers'
 const PROVIDER_INFO_LINK: Record<ProviderId, string> = {
   minimax: 'https://platform.minimaxi.com/subscribe/token-plan',
   kimi: 'https://kimi.com',
+  glm: 'https://open.bigmodel.cn',
+  deepseek: 'https://platform.deepseek.com',
 }
 
 export default function Home() {
@@ -66,8 +68,21 @@ export default function Home() {
           <div className="flex-1">
             <p className="font-medium text-text-primary">Coding Plan 订阅未启用</p>
             <p className="mt-0.5 text-amber-soft/90">
-              MiniMax API Key 有效,<strong className="font-medium">仍可使用普通 API 余额调用模型</strong>;
-              当前账户未开 Coding Plan 订阅,所以本仪表盘没有额度可显示。
+              {provider === 'glm' ? (
+                <>
+                  此 Key 关联的账号在智谱 monitor 系统里<strong className="font-medium">没有 Coding Plan 订阅</strong>。
+                  可能原因:这是普通 API Key 不是 Coding Plan Key,或 Coding Plan 在其他账号下。
+                  <br />
+                  <span className="text-text-muted">
+                   智谱 Coding Plan 订阅是绑定到具体账号的,需要账户主人在 dashboard 创建专用 Coding Plan Key。
+                  </span>
+                </>
+              ) : (
+                <>
+                  {provider === 'kimi' ? 'Kimi' : 'MiniMax'} API Key 有效,<strong className="font-medium">仍可使用普通 API 余额调用模型</strong>;
+                  当前账户未开 Coding Plan 订阅,所以本仪表盘没有额度可显示。
+                </>
+              )}
               <span className="ml-2 font-mono text-xs text-text-muted">upstream status {noSubscription.code}</span>
             </p>
             <a

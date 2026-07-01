@@ -4,7 +4,7 @@
  * parser is defensive and degrades gracefully when fields are missing.
  */
 
-export type ProviderId = 'minimax' | 'kimi'
+export type ProviderId = 'minimax' | 'kimi' | 'glm' | 'deepseek'
 
 export interface UpstreamSource {
   provider: ProviderId
@@ -19,6 +19,18 @@ export interface UpstreamSource {
 export interface PlanQueryResponse {
   ok: boolean
   sources: UpstreamSource[]
+}
+
+/**
+ * DeepSeek 余额信息。
+ * 注意 DeepSeek 是预付费扣费模式(没有 5h / 周窗口),
+ * 只查账户余额(余额 = 赠金余额 + 充值余额)。
+ */
+export interface DeepseekBalanceInfo {
+  currency: 'CNY' | 'USD'
+  total_balance: string
+  granted_balance: string
+  topped_up_balance: string
 }
 
 export interface ModelRemain {
@@ -65,6 +77,15 @@ export interface NormalizedPlan {
   avg_remaining_percent?: number
   next_reset_at?: number
   weekly_reset_at?: number
+  /**
+   * DeepSeek 等预付费平台使用: 不显示 5h / 周窗口,
+   * 而是显示账户余额表格(每种货币一行,带赠金/充值金明细)。
+   */
+  balance_infos?: DeepseekBalanceInfo[]
+  /**
+   * DeepSeek `is_available`: 账户是否还有余额可调用 API
+   */
+  is_available?: boolean
   models: ModelRemain[]
   source: string
   raw: unknown

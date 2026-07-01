@@ -32,30 +32,23 @@ interface PlanState {
 
 const REQUEST_TIMEOUT_MS = 15_000
 
-async function fetchUpstream(
+async function fetchOnePath(
+  provider: { host: string; method: 'GET' | 'POST' },
   providerId: ProviderId,
   apiKey: string,
+  path: string,
 ): Promise<UpstreamSource> {
-  const provider = getProvider(providerId)
-  if (!provider) {
-    return {
-      provider: providerId,
-      endpoint: '',
-      status: 0,
-      raw: null,
-      ok: false,
-      error: `Unknown provider: ${providerId}`,
-      fetchedAt: new Date().toISOString(),
-    }
-  }
-  const url = provider.host ? `${provider.host}${provider.path}` : provider.path
+  const url = provider.host ? `${provider.host}${path}` : path
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
   try {
     const init: RequestInit = {
       method: provider.method,
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        // GLM monitor API 用 "Authorization: <token>" (不带 Bearer)
+        // token 类型是 ANTHROPIC_AUTH_TOKEN (Claude Code / TRAE IDE 兼容协议)
+        // MiniMax / Kimi / DeepSeek 用标准 "Authorization: Bearer <apiKey>"
+        Authorization: providerId === 'glm' ? apiKey : `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
@@ -79,8 +72,8 @@ async function fetchUpstream(
         : -1
     const ok = res.status >= 200 && res.status < 300 && (statusCode === 0 || statusCode === -1)
     return {
-      provider: provider.id,
-      endpoint: provider.path,
+      provider: providerId,
+      endpoint: path,
       status: res.status,
       raw: json,
       ok,
@@ -88,8 +81,8 @@ async function fetchUpstream(
     }
   } catch (err) {
     return {
-      provider: provider.id,
-      endpoint: provider.path,
+      provider: providerId,
+      endpoint: path,
       status: 0,
       raw: null,
       ok: false,
@@ -101,11 +94,43 @@ async function fetchUpstream(
   }
 }
 
+async function fetchUpstream(
+  providerId: ProviderId,
+  apiKey: string,
+): Promise<UpstreamSource[]> {
+  const provider = getProvider(providerId)
+  if (!provider) {
+    return [
+      {
+        provider: providerId,
+        endpoint: '',
+        status: 0,
+        raw: null,
+        ok: false,
+        error: `Unknown provider: ${providerId}`,
+        fetchedAt: new Date().toISOString(),
+      },
+    ]
+  }
+  // 主 endpoint + extraPaths 列表里的次要 endpoint, 各自独立 fetch 并收集为单独 source。
+  const allPaths = [provider.path, ...(provider.extraPaths ?? [])]
+  return Promise.all(
+    allPaths.map(p =>
+      fetchOnePath(
+        { host: provider.host, method: provider.method },
+        providerId,
+        apiKey,
+        p,
+      ),
+    ),
+  )
+}
+
 export const usePlanStore = create<PlanState>()(
   persist(
     (set, get) => ({
       provider: 'minimax',
-      apiKeys: { minimax: '', kimi: '' },
+      apiKeys: { minimax: '', kimi: '', glm: '', deepseek: '' },
       loading: false,
       data: null,
       plan: null,
@@ -152,10 +177,11 @@ export const usePlanStore = create<PlanState>()(
         }
         set({ loading: true, error: null, noSubscription: null })
         try {
-          const source = await fetchUpstream(state.provider, key)
-          const json = { ok: source.ok, sources: [source] }
-          let plan = bestPlan(json.sources)
-          const noSub = detectNoSubscription(json.sources)
+          const sources = await fetchUpstream(state.provider, key)
+          const allOk = sources.every(s => s.ok)
+          const json = { ok: allOk, sources }
+          let plan = bestPlan(sources)
+          const noSub = detectNoSubscription(sources)
           // 过滤掉用户不关心的模型（当前需求：只看 general）
           if (plan) {
             plan = {
@@ -172,8 +198,8 @@ export const usePlanStore = create<PlanState>()(
               ? null
               : noSub
                 ? null
-                : source.error
-                  ? `请求失败: ${source.error}`
+                : sources.find(s => s.error)?.error
+                  ? `请求失败: ${sources.find(s => s.error)?.error}`
                   : '未找到可识别的套餐数据,请检查 Key 是否有效或展开 Raw Response 查看',
             lastFetchedAt: new Date().toISOString(),
             loading: false,
@@ -195,6 +221,16 @@ export const usePlanStore = create<PlanState>()(
         refreshIntervalSec: state.refreshIntervalSec,
         showRaw: state.showRaw,
       }),
+      // 旧版 localStorage 没有 glm 字段时,用当前 default 合并,
+      // 避免切到新 provider 时 apiKeys[provider] 为 undefined。
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<PlanState>
+        return {
+          ...current,
+          ...p,
+          apiKeys: { ...current.apiKeys, ...(p.apiKeys ?? {}) },
+        }
+      },
     },
   ),
 )

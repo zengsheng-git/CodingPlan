@@ -5,6 +5,8 @@ import type { ProviderId } from '@/types/plan'
 const OPTIONS: Array<{ id: ProviderId; label: string }> = [
   { id: 'minimax', label: 'MiniMax' },
   { id: 'kimi', label: 'Kimi' },
+  { id: 'glm', label: 'GLM' },
+  { id: 'deepseek', label: 'DeepSeek' },
 ]
 
 export default function ProviderSwitcher() {

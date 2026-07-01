@@ -6,6 +6,8 @@ import type { ProviderId } from '@/types/plan'
 const PROVIDER_PLATFORM_LABEL: Record<ProviderId, string> = {
   minimax: '前往 MiniMax 平台',
   kimi: '前往 Kimi/Moonshot 平台',
+  glm: '前往智谱开放平台',
+  deepseek: '前往 DeepSeek 平台',
 }
 
 interface HeaderProps {

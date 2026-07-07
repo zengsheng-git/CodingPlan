@@ -412,6 +412,8 @@ export function normalizeKimi(source: UpstreamSource): NormalizedPlan | null {
     models: [model],
     source: source.endpoint,
     raw,
+    // 上游代理函数返回 demo: true 时, 标记为演示数据
+    demo: raw.demo === true,
   }
 }
 

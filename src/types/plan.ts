@@ -89,4 +89,10 @@ export interface NormalizedPlan {
   models: ModelRemain[]
   source: string
   raw: unknown
+  /**
+   * 标记当前数据是演示假数据(非真实查询结果)。
+   * Kimi 在生产环境因上游 Cloudflare 拦截无法真实查询时, 代理函数
+   * 会返回结构一致的假数据并置 demo: true, 前端据此显示"演示数据"标识。
+   */
+  demo?: boolean
 }

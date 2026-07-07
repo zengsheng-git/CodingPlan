@@ -1,4 +1,4 @@
-import { Boxes, Inbox, KeyRound, Wallet } from 'lucide-react'
+import { Boxes, Eye, Inbox, KeyRound, Wallet } from 'lucide-react'
 import { usePlanStore } from '@/store/planStore'
 import ModelRemainCard, { ModelRemainCardSkeleton } from '@/components/ModelRemainCard'
 import type { DeepseekBalanceInfo } from '@/types/plan'
@@ -69,12 +69,32 @@ export default function ModelGrid() {
   return (
     <section className="mt-6">
       <Header count={plan.models.length} source={plan.source} />
+      {plan.demo && <DemoBanner />}
       <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {plan.models.map((m, i) => (
           <ModelRemainCard key={m.model_name + i} model={m} index={i} />
         ))}
       </div>
     </section>
+  )
+}
+
+/**
+ * 演示数据横幅: 当 plan.demo === true 时显示。
+ * 用于 Kimi 等因上游封锁无法真实查询、改返回假数据的场景。
+ */
+function DemoBanner() {
+  return (
+    <div className="mt-3 flex items-start gap-2.5 rounded-2xl border border-amber/30 bg-amber/5 px-4 py-2.5 text-sm text-amber-soft">
+      <Eye size={16} className="mt-0.5 shrink-0" />
+      <div>
+        <span className="font-semibold">演示数据</span>
+        <span className="ml-1.5 text-amber-soft/80">
+          这是示例假数据,不是真实用量。Kimi 上游因 Cloudflare 拦截无法在生产环境真实查询,
+          此处用占位数据保证界面可预览。
+        </span>
+      </div>
+    </div>
   )
 }
 

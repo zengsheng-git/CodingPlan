@@ -21,7 +21,9 @@ npm run dev      # 启动 Vite (5173)
 浏览器打开 `http://localhost:5173`，选 provider、填 Key、点保存并查询。
 
 > **混合架构**：MiniMax 走纯前端（厂商 API 已正确返回 CORS），Kimi 走 Vite dev proxy（厂商 API 的 OPTIONS 预检不发 CORS 头，浏览器无法绕过）。
-> **生产部署限制**：部署到静态托管（GitHub Pages / Vercel / Netlify）时，Kimi 会失效；MiniMax 仍可用。
+> **生产部署限制**：部署到静态托管（GitHub Pages）时，Kimi 会失效；MiniMax 仍可用。
+>
+> 📌 **Kimi 生产代理探索**：本项目尝试过用 Cloudflare Pages Functions 给 Kimi 加生产代理，但**未成功**——Kimi 上游自身在 Cloudflare 后面，会拦截来自 CF Workers 的请求。目前 CF Pages 上返回的是**演示假数据**。完整背景、原理、失败原因、未来恢复方案见 **[KIMI-PROXY.md](KIMI-PROXY.md)**。
 
 ### 其他命令
 

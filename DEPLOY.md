@@ -223,6 +223,36 @@ GitHub Pages CDN 缓存刷新有延迟。改了代码后 push,可能需要等一
 
 不想 push 代码,只想重跑一次部署?在 https://github.com/zengsheng-git/CodingPlan/actions/workflows/deploy.yml 点 **"Run workflow"** 按钮即可。
 
+## ⏭️ 跳过某次部署
+
+有时候你只想提交一个改了错别字的文档、或者一次临时的试验性改动,**不想触发部署**(节省时间、避免无意义的构建和静态度量)。这时不需要改动任何 workflow 配置,只需要在 commit message 里加一个关键词,GitHub Actions 就会**跳过本次触发**。
+
+**用法**:
+
+```bash
+# 正常 commit → 触发部署
+git commit -m "fix: 修复了 xxx"
+
+# 加 [skip ci] → 跳过部署 (但不影响后续 commit)
+git commit -m "docs: 改了个错别字 [skip ci]"
+git commit -m "实验性改动 [ci skip]"
+git commit -m "随便改改 [no ci]"
+git commit -m "跳过部署 [skip actions]"
+```
+
+任意一种写法都有效(不区分大小写,双引号/单引号都可以)。push 后,GitHub Actions 页面会显示这次 commit 的 workflow 被跳过了(灰色 ⊘ 标记)。
+
+**适用场景**:
+
+| 想跳过部署的 commit | 原因 |
+|---|---|
+| `README.md` 改了一行 | 纯文档,不影响功能 |
+| 临时调试,不确定能不能用 | 先测,没问题再正式部署一次 |
+| 一堆小改动打包提交 | 先攒着,最后统一部署一次 |
+| 只改了 `DEPLOY.md` / `KIMI-PROXY.md` | 部署文档,不影响线上 |
+
+> ⚠️ **注意**:`[skip ci]` 会跳过**所有** workflow,不是单独某一个。比如你的仓库同时有 `deploy.yml`(GH Pages)和 `deploy-cloudflare.yml`(CF Pages),加了这个两个都会跳过。
+
 ## 🔄 回滚到上一个版本
 
 GitHub Pages 不直接支持回滚,但 workflow 跑过的产物会在 Actions 里保留一段时间。可以:
@@ -400,6 +430,25 @@ git push origin main
 | `project not found` | 第 2 步没做或项目名不对 | 确认项目名是 `codingplan` |
 | `authentication failed` | Token 或 Account ID 配错 | 回第 3、4 步重新获取 |
 | `wrangler not found` | 不应发生(workflow 自动装) | 把日志发出来看 |
+
+### 🌐 确认你的访问域名(重要)
+
+部署成功后,Cloudflare 会给项目分配一个 `*.pages.dev` 子域名。**这个域名不一定是 `codingplan.pages.dev`**——如果该名字在 CF 全局已被占用,CF 会自动加随机后缀保证唯一(比如本项目实际是 `codingplan-9xg.pages.dev`)。
+
+**三种方式找到你的真实域名**:
+
+1. **GitHub Actions 日志**(最直接):打开 [Actions 页面](https://github.com/zengsheng-git/CodingPlan/actions) → 点最近一次成功的 `Deploy to Cloudflare Pages` → 拉到日志最后,wrangler 会打印部署 URL,类似:
+   ```
+   ✨ Successfully deployed! Visit at: https://codingplan-9xg.pages.dev
+   ```
+
+2. **Cloudflare 控制台**:登录 https://dash.cloudflare.com → 左侧 **Workers & Pages** → 点 `codingplan` 项目 → 顶部就能看到 `*.pages.dev` 域名(在 "Deployments" 标签的最新一次部署旁也有)。
+
+3. **绑定自定义域名**(可选):在项目设置 → **Custom domains** 里可以绑你自己的域名(需要域名先托管到 Cloudflare 的 DNS)。绑了之后 `*.pages.dev` 依然可用。
+
+> 📌 **本项目的实际域名是 `https://codingplan-9xg.pages.dev/`**(已实测 HTTP 200)。在这个域名上:MiniMax / DeepSeek / GLM 正常使用,Kimi 显示演示假数据。
+
+> ⚠️ **两个部署域名不共享 localStorage**:GH Pages(`zengsheng-git.github.io`)和 CF Pages(`codingplan-9xg.pages.dev`)是不同域名,API Key 各存各的,切换域名要重新填。
 
 ---
 

@@ -1,0 +1,7 @@
+# Cloudflare Pages SPA fallback
+# 注意顺序: /api/* 必须在前面,避免被 SPA 重写规则吞掉
+# (Kimi 代理走 /api/kimi-usages,交给 functions/api/kimi-usages.ts 处理)
+/api/*  /api/:splat  200
+
+# 其余所有路径回退到 index.html (React Router 接管客户端路由)
+/*  /index.html  200

@@ -5,9 +5,11 @@ import { traeBadgePlugin } from 'vite-plugin-trae-solo-badge';
 
 // https://vite.dev/config/
 export default defineConfig({
-  // GitHub Pages 部署在子路径 https://<user>.github.io/CodingPlan/,
-  // 所以 base 必须是 '/CodingPlan/'。本地 dev 仍以 '/' 访问 (Vite 会自动加 base)。
-  base: '/CodingPlan/',
+// base 由环境变量 VITE_BASE 驱动,解决"一个仓库两个部署目标"的冲突:
+//   - GitHub Pages (默认, 不传 VITE_BASE): 子路径 '/CodingPlan/'
+//   - Cloudflare Pages (CI 传 VITE_BASE='/'): 根路径 '/'
+// 本地 dev 不传 VITE_BASE, 走默认 '/CodingPlan/', 与现有行为一致。
+base: process.env.VITE_BASE ?? '/CodingPlan/',
   plugins: [
     react({
       babel: {

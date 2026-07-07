@@ -67,12 +67,30 @@ export const onRequestGet: PagesFunction = async ({ request }) => {
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
 
   try {
+    // Kimi 上游由 Cloudflare 保护, 会拦截"看起来像机器人"的请求
+    // (CF Workers 的出口 IP + 缺少浏览器指纹 = 被 Bot Management 拦)。
+    // 这里补上完整的浏览器请求头, 尽量伪装成真实浏览器发出的请求。
+    // 注意: cf: 'resolveOverride' 这类绕过手段在 Pages Functions 里不可用,
+    // 只能靠 header 伪装。如果 Kimi 启用了需要执行 JS 的 challenge, 这层会失效。
     const upstream = await fetch(UPSTREAM_URL, {
       method: 'GET',
       headers: {
         Authorization: auth,
         'Content-Type': 'application/json',
-        Accept: 'application/json',
+        Accept: 'application/json, text/plain, */*',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        // 伪装成 macOS Chrome, Kimi 的客户端本身就是这个 UA 系
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Sec-Ch-Ua':
+          '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"macOS"',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site',
+        Referer: 'https://kimi.com/',
+        Origin: 'https://kimi.com',
       },
       signal: controller.signal,
     })
